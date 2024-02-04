@@ -1,0 +1,1 @@
+Speed Graph for Mikrotik CCR CCR1009-7G-1C-1S+
