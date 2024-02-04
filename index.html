@@ -1,10 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Speed Graph</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bandwidth Speed Graph</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 20px;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
 </head>
 <body>
+
+<div>
+  <label for="timeRange">Select Time Range:</label>
+  <select id="timeRange" onchange="updateChart()">
+    <option value="5">5 Minutes</option>
+    <option value="60">1 Hour</option>
+    <option value="1440">1 Day</option>
+    <option value="10080">1 Week</option>
+    <option value="43200">1 Month</option>
+  </select>
+</div>
+
+<canvas id="speedChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script>
+  let speedChart; // Define speedChart globally
+
+  // Function to fetch data from Speed_BRS_WP.txt
+  async function fetchData() {
+    const response = await fetch('Speed_BRS_WP.txt');
+    const rawData = await response.text();
+
+    return rawData.split('\n').map(line => {
+      const [date, time, speed] = line.split(' , ');
+      return { datetime: `${date} ${time}`, speed: parseFloat(speed) };
+    });
+  }
+
+  // Function to update chart based on selected time range
+  async function updateChart() {
+    const data = await fetchData();
+
+    const selectedTimeRange = document.getElementById('timeRange').value;
+    speedChart.options.scales.x.time.unit = selectedTimeRange < 1440 ? 'minute' : 'day';
+    speedChart.data.labels = data.map(entry => entry.datetime);
+    speedChart.data.datasets[0].data = data.map(entry => entry.speed);
+    speedChart.update();
+  }
+
+  // Initial chart setup
+  async function initializeChart() {
+    const data = await fetchData();
+
+    const ctx = document.getElementById('speedChart').getContext('2d');
+    speedChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map(entry => entry.datetime),
+        datasets: [{
+          label: 'Bandwidth Speed (Mbps)',
+          data: data.map(entry => entry.speed),
+          borderColor: 'rgb(75, 192, 192)',
+          borderWidth: 2,
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'minute',
+              parser: 'YYYY-MM-DD HH:mm:ss',
+              tooltipFormat: 'll HH:mm'
+            },
+            title: {
+              display: true,
+              text: 'Date and Time'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Speed (Mbps)'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Call initializeChart to set up the chart initially
+  initializeChart();
+</script>
 
 </body>
 </html>
